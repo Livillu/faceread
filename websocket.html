@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>websocket test</title>
+    <link rel="stylesheet" type="text/css" href="/js/jquery.datetimepicker.css"/>
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/jquery.datetimepicker.full.js"></script>
+</head>
+<body>
+    <p>
+    <table border="1">
+        <tr>
+            <td>
+                補資料
+            </td>
+            <td>
+                <br/>
+                <table>
+                    <tr>
+                        <td>選擇機台:</td>
+                        <td>
+                            <select name="cardid" id="cardid">
+                                <option value="-1"></option>
+                            </select>
+                        </td>
+                        <td width="30"></td>
+                        <td>開始時間:</td>
+                        <td>
+                            <input type="text" name="from-date" id="from-date"/>
+                        </td>
+                        <td width="30"></td>
+                        <td>結束時間:</td>
+                        <td>
+                            <input type="text" name="to-date" id="to-date"/>
+                        </td>
+                        <td width="30"></td>
+                        <td></td>
+                        <td>
+                            <button onclick="reloadtime()">補刷卡資料</button>
+                        </td>
+                    </tr>
+                </table>
+                <br/>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                員工資料傳輸
+            </td>
+            <td>
+                <br/>
+                <table>
+                    <tr>
+                        <td>部門:</td>
+                        <td>
+                            <select name="depart" id="depart">
+                            </select>
+                        </td>
+                        <td width="30"></td>
+                        <td>開始ID:</td>
+                        <td>
+                            <select name="employee1" id="employee1" width="80">
+                            </select>
+                        </td>
+                        <td width="30"></td>
+                        <td>結束ID:</td>
+                        <td>
+                            <select name="employee2" id="employee2" width="80">
+                            </select>
+                        </td>
+                        <td width="30"></td>
+                        <td>選擇機台:</td>
+                        <td>
+                            <select name="cardid1" id="cardid1">
+                                <option value="-1"></option>
+                            </select>
+                            face:<input type="text" name="face" id="face"/>
+                            factory:<input type="text" name="factory" id="factory"/>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="11">
+                            <br/>
+                            <button onclick="addpersons()">部門員工資料上傳刷臉機</button>
+                            <button onclick="uppersons()">單筆員工資料上傳刷臉機</button>
+                            <button onclick="dlpersons()">刷臉機下載員工資料</button>
+                        </td>
+                    </tr>
+                </table>
+                <br/>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top">
+                <button onclick="getonlinemc()">上線機台</button>
+            </td>
+            <td>
+                <table id=faceid border="1">
+                    <tr>
+                        <td width="100">ID</td>
+                        <td width="100">CARD ID</td>
+                        <td width="180">Name</td>
+                        <td width="180">IP</td>
+                        <td >Status</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                資料庫連線
+            </td>
+            <td>
+                <table>
+                    <tr>
+                        <td>IP:</td>
+                        <td>
+                            <input type="text" name="src_ip" id="src_ip"/>
+                        </td>
+                        <td width="30"></td>
+                        <td>User:</td>
+                        <td>
+                            <input type="text" name="src_us" id="src_us"/>
+                        </td>
+                        <td width="30"></td>
+                        <td>password:</td>
+                        <td>
+                            <input type="text" name="src_pw" id="src_pw"/>
+                        </td>
+                        <td width="30"></td>
+                        <td>
+                            <button onclick="setconnection()">連線設定</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="9">
+                            <input type="text" name="src_connection" id="src_connection" style="width: 600px;" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="9">
+                            <input type="text" id="encode_connection" style="width: 600px;" />
+                        </td>
+                    </tr>
+                </table>
+                <br/>
+            </td>
+        </tr>
+    </table>
+    </p>
+<div>
+    
+</div>
+
+<script>
+    $(function(){
+        $.post('/getselects', {cardId: ''}, function(data) {
+            for(const index in data.Depart){
+                $('#depart').append($('<option>', {value:data.Depart[index].Id, text:data.Depart[index].Name}));
+            }
+        });
+        $('#depart').on('change',function(e){
+            $('#employee1').empty();
+            $('#employee2').empty();
+            $('#employee1').append($('<option>', {value:'0', text:'全部'}));
+            $('#employee2').append($('<option>', {value:'-1', text:''}));
+            $.getJSON('getempoeey', {dpId: $(e.target).val()}, function(data) {
+                if(data){
+                    for(const index in data){
+                       $('#employee1').append($('<option>', {value:data[index].Id, text:data[index].Name}));
+                       $('#employee2').append($('<option>', {value:data[index].Id, text:data[index].Name}));
+                    }
+                }
+            });
+        });
+        jQuery('#from-date, #to-date').datetimepicker();
+    });
+
+    function setconnection(){
+    $.post('/setconnection', {src_ip: $('#src_ip').val(),src_us: $('#src_us').val(),src_pw: $('#src_pw').val()}, function(data) {
+            if(data){
+                alert(data);
+                $('#src_connection').val(data);
+            }
+        });
+    }
+
+    function unconnection(){
+    $.post('/unconnection', {src_string: $('#src_connection').val()}, function(data) {
+            if(data){
+                alert(data);
+                $('#src_connection').val(data);
+            }
+        });
+    }
+
+    function getonlinemc(){
+        $.getJSON('onlinemc', function(result) {
+            if(result){
+                $('#cardid1').empty();
+                $('#cardid1').append($('<option>',{value:-1,text:""}));
+                $('#cardid').empty();
+                $('#cardid').append($('<option>',{value:-1,text:""}));
+                var counts=0;
+                var txt='<tr><td width="100">ID</td><td width="100">CARD ID</td><td width="180">Name</td><td width="180">IP</td><td width="80">Status</td></tr>';
+                for(const index in result){
+                    counts++;
+                    txt +='<tr><td>'+counts+'</td><td>'+result[index].Id+'</td><td>'+result[index].Name+'</td><td>'+result[index].Ip+'</td><td>'+result[index].Status+'</td></tr>';
+                    $('#cardid').append($('<option>', {value:result[index].Id, text:result[index].Name}));
+                    $('#cardid1').append($('<option>', {value:result[index].Id, text:result[index].Name}));
+
+                }
+                $('#cardid').append($('<option>', {value:'0', text:'全部'}));
+                $('#cardid1').append($('<option>', {value:'0', text:'全部'}));
+                $('#faceid').html(txt);
+            }
+        });
+    }
+    
+    function reloadtime1(){
+        $.post('/reloadtime1', function(data) {
+            if(data){
+                alert(data);
+            }
+        });
+    }
+
+    function reloadtime(){
+        if($('#cardid').val() =="-1"){
+            alert("選擇機台!!!");
+        } else if($('#from-date').val() !="" && $('#to-date').val() !="")
+        {
+            $.post('/importtime', {cardid: $('#cardid').val(),sttime:$('#from-date').val(),edtime:$('#to-date').val()}, function(data) {
+                if(data){
+                    alert(data);
+                }
+            });
+        } else{
+            alert("選擇機台!!!");
+        }
+    }
+
+    function addpersons(){
+    $.post('/addpersons', {cardid: $('#cardid1').val(),dpId: $('#depart').val(),fpId1:$('#employee1').val(),fpId2:$('#employee2').val()}, function(data) {
+            if(data){
+                alert(data);
+            }
+        });
+    }
+
+    function dlpersons(){
+    $.post('/dlpersons', {cardid: $('#cardid1').val()}, function(data) {
+            if(data){
+                alert(data);
+            }
+        });
+    }
+
+    function uppersons(){
+        var v1=$('#face').val();
+        var v2=$('#factory').val();
+        $.post('/uppersons2', {face:v1,factory:v2}, function(data) {
+            if(data){
+                alert(data);
+            }
+        });
+    }
+    /*
+    function uppersons(){
+        var v1=$('#cardid1').val();
+        var v2=$('#employee1').val();
+        var v3='0904';
+        $.post('/uppersons1', {cardid:v1 ,employee1:v2,photo:v3 }, function(data) {
+            if(data){
+                alert(data);
+            }
+        });
+    }*/
+</script>
+</body>
+</html>
